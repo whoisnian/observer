@@ -205,7 +205,8 @@ var comboMap = map[Keycodes]Keycodes{
 	{K_F12}:    {K_CTRL, K_ALT, K_F12},    // ctrl-alt-F12
 	{K_DELETE}: {K_CTRL, K_ALT, K_DELETE}, // ctrl-alt-delete
 }
+var ComboKeycodes = Keycodes{K_CTRL, K_K}
 
-func CalcCombo(b []byte) Keycodes {
-	return comboMap[VT100Decode(b)]
+func CalcCombo(ks Keycodes) Keycodes {
+	return comboMap[ks]
 }

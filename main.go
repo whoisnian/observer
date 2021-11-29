@@ -30,15 +30,20 @@ func runTestMode(fd int) {
 	comboMode := false
 	for {
 		n, err := unix.Read(fd, buf[:])
-		fmt.Printf("%x\r\n", buf[:n])
+		fmt.Printf("ori: %x\r\n", buf[:n])
+		code := driver.VT100Decode(buf[:n])
 		if comboMode {
 			comboMode = false
-			code := driver.CalcCombo(buf[:n])
-		} else if buf[0] == 0x0b {
-			comboMode = true
+			code = driver.CalcCombo(code)
+			fmt.Printf("res: %x\r\n", code)
+			if code == driver.Keycodes([3]driver.Key{driver.K_CTRL, driver.K_Q}) {
+				break
+			}
 		} else {
-
+			comboMode = code == driver.ComboKeycodes
+			fmt.Printf("res: %x\r\n", code)
 		}
+
 		if err == io.EOF {
 			break
 		} else if err != nil {
@@ -71,30 +76,32 @@ func runNormalMode(fd int) {
 	// 	}
 	// }()
 
-	var buf [8]byte
-	comboMode := false
-	for {
-		n, err := unix.Read(fd, buf[:])
-		// fmt.Printf("%x\r\n", buf[:n])
-		if buf[0] == 0x0b {
-			comboMode = true
-			continue
-		}
-		if res := driver.EncodeForCH9329_K(buf[:n]); len(res) > 0 {
-			port.Write(res)
-			port.Write(driver.EncodeForCH9329_K(nil))
-		}
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			panic(err)
-		}
-	}
+	// var buf [8]byte
+	// comboMode := false
+	// for {
+	// 	n, err := unix.Read(fd, buf[:])
+	// 	// fmt.Printf("%x\r\n", buf[:n])
+	// 	if buf[0] == 0x0b {
+	// 		comboMode = true
+	// 		continue
+	// 	}
+	// 	if res := driver.EncodeForCH9329_K(buf[:n]); len(res) > 0 {
+	// 		port.Write(res)
+	// 		port.Write(driver.EncodeForCH9329_K(nil))
+	// 	}
+	// 	if err == io.EOF {
+	// 		break
+	// 	} else if err != nil {
+	// 		panic(err)
+	// 	}
+	// }
 
 	// wg.Wait()
 }
 
 func main() {
+	flag.Parse()
+
 	fd, oldState := initTerminal()
 	defer term.Restore(fd, oldState)
 
