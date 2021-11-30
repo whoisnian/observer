@@ -35,13 +35,13 @@ func runTestMode(fd int) {
 		if comboMode {
 			comboMode = false
 			code = driver.CalcCombo(code)
-			fmt.Printf("res: %x\r\n", code)
+			fmt.Printf("res: %s\r\n", code)
 			if code == driver.Keycodes([3]driver.Key{driver.K_CTRL, driver.K_Q}) {
 				break
 			}
 		} else {
 			comboMode = code == driver.ComboKeycodes
-			fmt.Printf("res: %x\r\n", code)
+			fmt.Printf("res: %s\r\n", code)
 		}
 
 		if err == io.EOF {

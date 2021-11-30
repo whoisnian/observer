@@ -88,6 +88,16 @@ const (
 	K_RIGHT      // Right
 )
 
+func (ks Keycodes) String() string {
+	if ks[1] == 0 && ks[2] == 0 {
+		return KeyName(ks[0])
+	} else if ks[2] == 0 {
+		return KeyName(ks[0]) + " + " + KeyName(ks[1])
+	} else {
+		return KeyName(ks[0]) + " + " + KeyName(ks[1]) + " + " + KeyName(ks[2])
+	}
+}
+
 func VT100Decode(b []byte) Keycodes {
 	if len(b) == 1 {
 		if 'a' <= b[0] && b[0] <= 'z' {
