@@ -1,3 +1,4 @@
+//go:generate stringer -type=Key -output=key_name.go
 package driver
 
 type Key = byte
