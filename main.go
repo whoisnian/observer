@@ -36,7 +36,7 @@ func runTestMode(fd int) {
 			comboMode = false
 			code = driver.CalcCombo(code)
 			fmt.Printf("res: %s\r\n", code)
-			if code == driver.Keycodes([3]driver.Key{driver.K_CTRL, driver.K_Q}) {
+			if code == driver.ComboKeycodesExit {
 				break
 			}
 		} else {
