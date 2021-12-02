@@ -3,6 +3,7 @@ package driver
 
 type Key = byte
 type Keycodes [3]Key
+type EncodeFunc func(ks Keycodes) []byte
 
 const (
 	K_ESC Key = iota + 1

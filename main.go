@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -15,17 +16,18 @@ import (
 var isDebug = flag.Bool("d", false, "Output debug message")
 var isTest = flag.Bool("t", false, "Keycodes test mode")
 var device = flag.String("dev", "/dev/ttyUSB0", "UART device name")
+var encode = flag.String("enc", "ch9329", "Encode driver (ch9329, kcom3)")
 
-func initTerminal() (fd int, oldState *term.State) {
+func initTerminal() (fd int, oldState *term.State, err error) {
 	fd = int(os.Stdin.Fd())
-	oldState, err := term.MakeRaw(fd)
+	oldState, err = term.MakeRaw(fd)
 	if err != nil {
-		panic(err)
+		return 0, nil, err
 	}
-	return fd, oldState
+	return fd, oldState, nil
 }
 
-func runTestMode(fd int) {
+func runTestMode(fd int) error {
 	var buf [8]byte
 	comboMode := false
 	for {
@@ -47,15 +49,32 @@ func runTestMode(fd int) {
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			panic(err)
+			return err
 		}
 	}
+	return nil
 }
 
-func runNormalMode(fd int) {
-	port, err := serial.Open(*device, 9600, 8, serial.ParityNone, serial.StopBits1)
+func openPort() (port *serial.Port, encodeFunc driver.EncodeFunc, err error) {
+	if *encode == "ch9329" {
+		port, err = serial.Open(*device, 9600, 8, serial.ParityNone, serial.StopBits1)
+		encodeFunc = driver.EncodeForCH9329
+	} else if *encode == "kcom3" {
+		port, err = serial.Open(*device, 57600, 8, serial.ParityNone, serial.StopBits1)
+		encodeFunc = driver.EncodeForKCOM3
+	} else {
+		return nil, nil, errors.New("unknown encode driver")
+	}
 	if err != nil {
-		panic(err)
+		return nil, nil, err
+	}
+	return port, encodeFunc, nil
+}
+
+func runNormalMode(fd int) error {
+	port, encodeFunc, err := openPort()
+	if err != nil {
+		return err
 	}
 	defer port.Close()
 
@@ -72,40 +91,47 @@ func runNormalMode(fd int) {
 			code = driver.CalcCombo(code)
 			if code == driver.ComboKeycodesExit {
 				break
-			} else if res := driver.EncodeForCH9329(code); len(res) > 0 {
+			} else if res := encodeFunc(code); len(res) > 0 {
 				if *isDebug {
 					fmt.Printf("res: %s\r\n", code)
 				}
 				port.Write(res)
-				port.Write(driver.EncodeForCH9329(driver.EmptyKeycodes))
+				port.Write(encodeFunc(driver.EmptyKeycodes))
 			}
 		} else if code == driver.ComboKeycodes {
 			comboMode = true
-		} else if res := driver.EncodeForCH9329(code); len(res) > 0 {
+		} else if res := encodeFunc(code); len(res) > 0 {
 			if *isDebug {
 				fmt.Printf("res: %s\r\n", code)
 			}
 			port.Write(res)
-			port.Write(driver.EncodeForCH9329(driver.EmptyKeycodes))
+			port.Write(encodeFunc(driver.EmptyKeycodes))
 		}
 
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			panic(err)
+			return err
 		}
 	}
+	return nil
 }
 
 func main() {
 	flag.Parse()
 
-	fd, oldState := initTerminal()
+	fd, oldState, err := initTerminal()
+	if err != nil {
+		panic(err)
+	}
 	defer term.Restore(fd, oldState)
 
 	if *isTest {
-		runTestMode(fd)
+		err = runTestMode(fd)
 	} else {
-		runNormalMode(fd)
+		err = runNormalMode(fd)
+	}
+	if err != nil {
+		panic(err)
 	}
 }
