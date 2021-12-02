@@ -7,216 +7,110 @@ package driver
 // BIT7  BIT6  BIT5    BIT4   BIT3  BIT2  BIT1    BIT0
 // R_win R_alt R_shift R_ctrl L_win L_alt L_shift L_ctrl
 
-func EncodeForCH9329_K(b []byte) []byte {
-	var res [14]byte = [14]byte{0x57, 0xab, 0x00, 0x02, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c}
-	if b == nil {
-		return res[:]
-	} else if len(b) == 1 {
-		if 'a' <= b[0] && b[0] <= 'z' {
-			res[7] = b[0] - 'a' + 0x04
-		} else if 'A' <= b[0] && b[0] <= 'Z' {
-			res[7] = b[0] - 'A' + 0x04
-			res[5] = 0x02 // L_shift
-		} else if 0x01 <= b[0] && b[0] <= 0x1a {
-			res[7] = b[0] - 0x01 + 0x04
-			res[5] = 0x01 // L_ctrl
-		} else if '1' <= b[0] && b[0] <= '9' {
-			res[7] = b[0] - '1' + 0x1e
-		} else if 0x1b <= b[0] && b[0] <= 0x1f {
-			res[7] = b[0] - 0x1b + 0x20
-			res[5] = 0x01 // L_ctrl
-		} else {
-			switch b[0] {
-			case '0':
-				res[7] = 0x27
-			case ')':
-				res[7] = 0x27
-				res[5] = 0x02 // L_shift
-			case '!':
-				res[7] = 0x1e
-				res[5] = 0x02 // L_shift
-			case '@':
-				res[7] = 0x1f
-				res[5] = 0x02 // L_shift
-			case '#':
-				res[7] = 0x20
-				res[5] = 0x02 // L_shift
-			case '$':
-				res[7] = 0x21
-				res[5] = 0x02 // L_shift
-			case '%':
-				res[7] = 0x22
-				res[5] = 0x02 // L_shift
-			case '^':
-				res[7] = 0x23
-				res[5] = 0x02 // L_shift
-			case '&':
-				res[7] = 0x24
-				res[5] = 0x02 // L_shift
-			case '*':
-				res[7] = 0x25
-				res[5] = 0x02 // L_shift
-			case '(':
-				res[7] = 0x26
-				res[5] = 0x02 // L_shift
-			case '-':
-				res[7] = 0x2d
-			case '_':
-				res[7] = 0x2d
-				res[5] = 0x02 // L_shift
-			case '=':
-				res[7] = 0x2e
-			case '+':
-				res[7] = 0x2e
-				res[5] = 0x02 // L_shift
-			case '`':
-				res[7] = 0x35
-			case '~':
-				res[7] = 0x35
-				res[5] = 0x02 // L_shift
-			case 0x7f:
-				res[7] = 0x2a
-			case '[':
-				res[7] = 0x2f
-			case '{':
-				res[7] = 0x2f
-				res[5] = 0x02 // L_shift
-			case ']':
-				res[7] = 0x30
-			case '}':
-				res[7] = 0x30
-				res[5] = 0x02 // L_shift
-			case '\\':
-				res[7] = 0x31
-			case '|':
-				res[7] = 0x31
-				res[5] = 0x02 // L_shift
-			case ';':
-				res[7] = 0x33
-			case ':':
-				res[7] = 0x33
-				res[5] = 0x02 // L_shift
-			case '\'':
-				res[7] = 0x34
-			case '"':
-				res[7] = 0x34
-				res[5] = 0x02 // L_shift
-			case '\r':
-				res[7] = 0x28
-			case ',':
-				res[7] = 0x36
-			case '<':
-				res[7] = 0x36
-				res[5] = 0x02 // L_shift
-			case '.':
-				res[7] = 0x37
-			case '>':
-				res[7] = 0x37
-				res[5] = 0x02 // L_shift
-			case '/':
-				res[7] = 0x38
-			case '?':
-				res[7] = 0x38
-				res[5] = 0x02 // L_shift
-			case ' ':
-				res[7] = 0x2c
-			case 0x1b:
-				res[7] = 0x29
-			case '\t':
-				res[7] = 0x29
-			case 0x00:
-				res[7] = 0x1f
-				res[5] = 0x01 // L_ctrl
-			}
-		}
-	} else if len(b) == 2 {
-	} else if len(b) == 3 {
-		if b[0] == 0x1b && b[1] == 0x5b {
-			switch b[2] {
-			case 0x41: // up
-				res[7] = 0x52
-			case 0x42: // down
-				res[7] = 0x51
-			case 0x43: // right
-				res[7] = 0x4f
-			case 0x44: // left
-				res[7] = 0x50
-			case 0x48: // home
-				res[7] = 0x4a
-			case 0x46: // end
-				res[7] = 0x4d
-			}
-		} else if b[0] == 0x1b && b[1] == 0x4f {
-			switch b[2] {
-			case 0x50: // f1
-				res[7] = 0x3a
-			case 0x51: // f2
-				res[7] = 0x3b
-			case 0x52: // f3
-				res[7] = 0x3c
-			case 0x53: // f4
-				res[7] = 0x3d
-			}
-		}
-	} else if len(b) == 4 {
-		if b[0] == 0x1b && b[1] == 0x5b && b[3] == 0x7e {
-			switch b[2] {
-			case 0x32: // insert
-				res[7] = 0x49
-			case 0x33: // delete
-				res[7] = 0x4c
-			case 0x35: // page up
-				res[7] = 0x4b
-			case 0x36: // page down
-				res[7] = 0x4e
-			}
-		}
-	} else if len(b) == 5 {
-		if b[0] == 0x1b && b[1] == 0x5b && b[2] == 0x31 && b[4] == 0x7e {
-			switch b[3] {
-			case 0x35: // f5
-				res[7] = 0x3e
-			case 0x37: // f6
-				res[7] = 0x3f
-			case 0x38: // f7
-				res[7] = 0x40
-			case 0x39: // f8
-				res[7] = 0x41
-			}
-		} else if b[0] == 0x1b && b[1] == 0x5b && b[2] == 0x32 && b[4] == 0x7e {
-			switch b[3] {
-			case 0x30: // f9
-				res[7] = 0x42
-			case 0x31: // f10
-				res[7] = 0x43
-			case 0x33: // f11
-				res[7] = 0x44
-			case 0x34: // f12
-				res[7] = 0x45
-			}
-		}
-	}
-	res[13] += res[5] + res[7]
-	return res[:]
+var ch9329KeyMap = map[Key]byte{
+	K_ESC: 0x29,
+
+	K_F1:  0x3a,
+	K_F2:  0x3b,
+	K_F3:  0x3c,
+	K_F4:  0x3d,
+	K_F5:  0x3e,
+	K_F6:  0x3f,
+	K_F7:  0x40,
+	K_F8:  0x41,
+	K_F9:  0x42,
+	K_F10: 0x43,
+	K_F11: 0x44,
+	K_F12: 0x45,
+
+	K_0: 0x27,
+	K_1: 0x1e,
+	K_2: 0x1f,
+	K_3: 0x20,
+	K_4: 0x21,
+	K_5: 0x22,
+	K_6: 0x23,
+	K_7: 0x24,
+	K_8: 0x25,
+	K_9: 0x26,
+
+	K_A: 0x04,
+	K_B: 0x05,
+	K_C: 0x06,
+	K_D: 0x07,
+	K_E: 0x08,
+	K_F: 0x09,
+	K_G: 0x0a,
+	K_H: 0x0b,
+	K_I: 0x0c,
+	K_J: 0x0d,
+	K_K: 0x0e,
+	K_L: 0x0f,
+	K_M: 0x10,
+	K_N: 0x11,
+	K_O: 0x12,
+	K_P: 0x13,
+	K_Q: 0x14,
+	K_R: 0x15,
+	K_S: 0x16,
+	K_T: 0x17,
+	K_U: 0x18,
+	K_V: 0x19,
+	K_W: 0x1a,
+	K_X: 0x1b,
+	K_Y: 0x1c,
+	K_Z: 0x1d,
+
+	K_GRAVE:      0x35,
+	K_MINUS:      0x2d,
+	K_EQUAL:      0x2e,
+	K_BACKSPACE:  0x2a,
+	K_TAB:        0x2b,
+	K_LEFTBRACE:  0x2f,
+	K_RIGHTBRACE: 0x30,
+	K_BACKSLASH:  0x31,
+	K_SEMICOLON:  0x33,
+	K_APOSTROPHE: 0x34,
+	K_ENTER:      0x28,
+	K_SHIFT:      0xe1,
+	K_COMMA:      0x36,
+	K_DOT:        0x37,
+	K_SLASH:      0x38,
+	K_CTRL:       0xe0,
+	K_ALT:        0xe2,
+	K_SPACE:      0x2c,
+	K_INSERT:     0x49,
+	K_DELETE:     0x4c,
+	K_HOME:       0x4a,
+	K_END:        0x4d,
+	K_PAGEUP:     0x4b,
+	K_PAGEDOWN:   0x4e,
+	K_UP:         0x52,
+	K_DOWN:       0x51,
+	K_LEFT:       0x50,
+	K_RIGHT:      0x4f,
 }
 
-func EncodeForCH9329_M(b []byte) []byte {
-	var offset byte = 30
-	var res [11]byte = [11]byte{0x57, 0xab, 0x00, 0x05, 0x05, 0x01, 0x00, 0x00, 0x00, 0x00, 0x0d}
-
-	if len(b) == 3 && b[0] == 0x1b && b[1] == 0x5b {
-		switch b[2] {
-		case 0x41: // up
-			res[8] = -offset
-		case 0x42: // down
-			res[8] = offset
-		case 0x43: // right
-			res[7] = offset
-		case 0x44: // left
-			res[7] = -offset
-		}
-		res[10] += res[7] + res[8]
+func EncodeForCH9329(ks Keycodes) []byte {
+	var res [14]byte = [14]byte{0x57, 0xab, 0x00, 0x02, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c}
+	if ks == EmptyKeycodes {
 		return res[:]
 	}
-	return nil
+
+	pos := 7
+	for _, k := range ks {
+		if k == K_CTRL {
+			res[5] |= 0x01
+		} else if k == K_SHIFT {
+			res[5] |= 0x02
+		} else if k == K_ALT {
+			res[5] |= 0x04
+		} else {
+			res[pos] = ch9329KeyMap[k]
+			res[13] += res[pos]
+			pos++
+		}
+	}
+	res[13] += res[5]
+	return res[:]
 }

@@ -59,44 +59,42 @@ func runNormalMode(fd int) {
 	}
 	defer port.Close()
 
-	// wg := new(sync.WaitGroup)
-	// wg.Add(1)
-	// go func() {
-	// 	defer wg.Done()
-	// 	var buf [128]byte
-	// 	for {
-	// 		n, err := port.Read(buf[:])
-	// 		fmt.Println("read ", n, err)
-	// 		if err == io.EOF {
-	// 			break
-	// 		} else if err != nil {
-	// 			panic(err)
-	// 		}
-	// 		fmt.Printf("%x\r\n", buf[:n])
-	// 	}
-	// }()
+	var buf [8]byte
+	comboMode := false
+	for {
+		n, err := unix.Read(fd, buf[:])
+		if *isDebug {
+			fmt.Printf("ori: %x\r\n", buf[:n])
+		}
+		code := driver.VT100Decode(buf[:n])
+		if comboMode {
+			comboMode = false
+			code = driver.CalcCombo(code)
+			if code == driver.ComboKeycodesExit {
+				break
+			} else if res := driver.EncodeForCH9329(code); len(res) > 0 {
+				if *isDebug {
+					fmt.Printf("res: %s\r\n", code)
+				}
+				port.Write(res)
+				port.Write(driver.EncodeForCH9329(driver.EmptyKeycodes))
+			}
+		} else if code == driver.ComboKeycodes {
+			comboMode = true
+		} else if res := driver.EncodeForCH9329(code); len(res) > 0 {
+			if *isDebug {
+				fmt.Printf("res: %s\r\n", code)
+			}
+			port.Write(res)
+			port.Write(driver.EncodeForCH9329(driver.EmptyKeycodes))
+		}
 
-	// var buf [8]byte
-	// comboMode := false
-	// for {
-	// 	n, err := unix.Read(fd, buf[:])
-	// 	// fmt.Printf("%x\r\n", buf[:n])
-	// 	if buf[0] == 0x0b {
-	// 		comboMode = true
-	// 		continue
-	// 	}
-	// 	if res := driver.EncodeForCH9329_K(buf[:n]); len(res) > 0 {
-	// 		port.Write(res)
-	// 		port.Write(driver.EncodeForCH9329_K(nil))
-	// 	}
-	// 	if err == io.EOF {
-	// 		break
-	// 	} else if err != nil {
-	// 		panic(err)
-	// 	}
-	// }
-
-	// wg.Wait()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			panic(err)
+		}
+	}
 }
 
 func main() {

@@ -88,8 +88,12 @@ const (
 	K_RIGHT      // Right
 )
 
+var EmptyKeycodes Keycodes = Keycodes{}
+
 func (ks Keycodes) String() string {
-	if ks[1] == 0 && ks[2] == 0 {
+	if ks[0] == 0 && ks[1] == 0 && ks[2] == 0 {
+		return "EMPTY"
+	} else if ks[1] == 0 && ks[2] == 0 {
 		return KeyName(ks[0])
 	} else if ks[2] == 0 {
 		return KeyName(ks[0]) + " + " + KeyName(ks[1])
@@ -110,11 +114,11 @@ func VT100Decode(b []byte) Keycodes {
 			0x06: {K_CTRL, K_F},
 			0x07: {K_CTRL, K_G},
 			0x08: {K_CTRL, K_H},
-			0x09: {K_CTRL, K_I}, // K_TAB
+			0x09: {K_TAB}, // {K_CTRL, K_I}
 			0x0a: {K_CTRL, K_J},
 			0x0b: {K_CTRL, K_K},
 			0x0c: {K_CTRL, K_L},
-			0x0d: {K_CTRL, K_M}, // K_ENTER
+			0x0d: {K_ENTER}, // {K_CTRL, K_M}
 			0x0e: {K_CTRL, K_N},
 			0x0f: {K_CTRL, K_O},
 			0x10: {K_CTRL, K_P},
@@ -128,7 +132,7 @@ func VT100Decode(b []byte) Keycodes {
 			0x18: {K_CTRL, K_X},
 			0x19: {K_CTRL, K_Y},
 			0x1a: {K_CTRL, K_Z},
-			0x1b: {K_CTRL, K_3}, // K_ESC
+			0x1b: {K_ESC}, // {K_CTRL, K_3}
 			0x1c: {K_CTRL, K_4},
 			0x1d: {K_CTRL, K_5},
 			0x1e: {K_CTRL, K_6},
@@ -237,8 +241,8 @@ func VT100Decode(b []byte) Keycodes {
 				0x42: {K_DOWN},
 				0x43: {K_RIGHT},
 				0x44: {K_LEFT},
-				0x48: {K_HOME},
 				0x46: {K_END},
+				0x48: {K_HOME},
 			}[b[2]]
 		} else if b[0] == 0x1b && b[1] == 0x4f {
 			return map[byte]Keycodes{
@@ -249,10 +253,20 @@ func VT100Decode(b []byte) Keycodes {
 			}[b[2]]
 		}
 	} else if len(b) == 4 {
-		if b[0] == 0x1b && b[1] == 0x5b && b[3] == 0x7e {
+		if b[0] == 0x1b && b[1] == 0x5b && b[2] == 0x5b {
 			return map[byte]Keycodes{
+				0x41: {K_F1},
+				0x42: {K_F2},
+				0x43: {K_F3},
+				0x44: {K_F4},
+				0x45: {K_F5},
+			}[b[3]]
+		} else if b[0] == 0x1b && b[1] == 0x5b && b[3] == 0x7e {
+			return map[byte]Keycodes{
+				0x31: {K_HOME},
 				0x32: {K_INSERT},
 				0x33: {K_DELETE},
+				0x34: {K_END},
 				0x35: {K_PAGEUP},
 				0x36: {K_PAGEDOWN},
 			}[b[2]]
@@ -274,12 +288,13 @@ func VT100Decode(b []byte) Keycodes {
 			}[b[3]]
 		}
 	}
-	return Keycodes{}
+	return EmptyKeycodes
 }
 
 var comboMap = map[Keycodes]Keycodes{
 	{K_Q}:      {K_CTRL, K_Q},             // special: exit
 	{K_K}:      {K_CTRL, K_K},             // ctrl-k
+	{K_T}:      {K_CTRL, K_ALT, K_T},      // ctrl-alt-t
 	{K_F1}:     {K_CTRL, K_ALT, K_F1},     // ctrl-alt-F1
 	{K_F2}:     {K_CTRL, K_ALT, K_F2},     // ctrl-alt-F2
 	{K_F3}:     {K_CTRL, K_ALT, K_F3},     // ctrl-alt-F3
