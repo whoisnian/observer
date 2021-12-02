@@ -1,6 +1,6 @@
 package driver
 
-var ch9329KeyMap = map[Key]byte{
+var kcom3KeyMap = map[Key]byte{
 	K_ESC: 0x29,
 
 	K_F1:  0x3a,
@@ -84,26 +84,24 @@ var ch9329KeyMap = map[Key]byte{
 	K_RIGHT:      0x4f,
 }
 
-func EncodeForCH9329(ks Keycodes) []byte {
-	var res [14]byte = [14]byte{0x57, 0xab, 0x00, 0x02, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c}
+func EncodeForKCOM3(ks Keycodes) []byte {
+	var res [11]byte = [11]byte{0x57, 0xab, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 	if ks == EmptyKeycodes {
 		return res[:]
 	}
 
-	pos := 7
+	pos := 5
 	for _, k := range ks {
 		if k == K_CTRL {
-			res[5] |= 0x01
+			res[3] |= 0x01
 		} else if k == K_SHIFT {
-			res[5] |= 0x02
+			res[3] |= 0x02
 		} else if k == K_ALT {
-			res[5] |= 0x04
+			res[3] |= 0x04
 		} else {
-			res[pos] = ch9329KeyMap[k]
-			res[13] += res[pos]
+			res[pos] = kcom3KeyMap[k]
 			pos++
 		}
 	}
-	res[13] += res[5]
 	return res[:]
 }
