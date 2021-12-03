@@ -1,6 +1,8 @@
 package serial
 
 import (
+	"errors"
+
 	"golang.org/x/sys/unix"
 )
 
@@ -28,4 +30,9 @@ const (
 	ParityEven  uint32 = unix.PARENB
 	ParityMark  uint32 = unix.PARENB | unix.CMSPAR | unix.PARODD
 	ParitySpace uint32 = unix.PARENB | unix.CMSPAR
+)
+
+var (
+	ErrInvalidBaudRate = errors.New("invalid baudrate")
+	ErrInvalidDataBits = errors.New("invalid databits")
 )

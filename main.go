@@ -29,21 +29,20 @@ func initTerminal() (fd int, oldState *term.State, err error) {
 
 func runTestMode(fd int) error {
 	var buf [8]byte
-	comboMode := false
+	code := driver.EmptyKeycodes
+	isCombo := false
+	isExit := false
 	for {
 		n, err := unix.Read(fd, buf[:])
 		fmt.Printf("ori: %x\r\n", buf[:n])
-		code := driver.VT100Decode(buf[:n])
-		if comboMode {
-			comboMode = false
-			code = driver.CalcCombo(code)
+		code, isCombo, isExit = driver.Decode(buf[:n], isCombo)
+		if isCombo {
+			fmt.Printf("enter comboMode\r\n")
+		} else {
 			fmt.Printf("res: %s\r\n", code)
-			if code == driver.ComboKeycodesExit {
+			if isExit {
 				break
 			}
-		} else {
-			comboMode = code == driver.ComboKeycodes
-			fmt.Printf("res: %s\r\n", code)
 		}
 
 		if err == io.EOF {
@@ -79,33 +78,28 @@ func runNormalMode(fd int) error {
 	defer port.Close()
 
 	var buf [8]byte
-	comboMode := false
+	code := driver.EmptyKeycodes
+	isCombo := false
+	isExit := false
 	for {
 		n, err := unix.Read(fd, buf[:])
 		if *isDebug {
 			fmt.Printf("ori: %x\r\n", buf[:n])
 		}
-		code := driver.VT100Decode(buf[:n])
-		if comboMode {
-			comboMode = false
-			code = driver.CalcCombo(code)
-			if code == driver.ComboKeycodesExit {
+		code, isCombo, isExit = driver.Decode(buf[:n], isCombo)
+		if isCombo {
+			if *isDebug {
+				fmt.Printf("enter comboMode\r\n")
+			}
+		} else {
+			fmt.Printf("res: %s\r\n", code)
+			if isExit {
 				break
-			} else if res := encodeFunc(code); len(res) > 0 {
-				if *isDebug {
-					fmt.Printf("res: %s\r\n", code)
-				}
+			}
+			if res := encodeFunc(code); len(res) > 0 {
 				port.Write(res)
 				port.Write(encodeFunc(driver.EmptyKeycodes))
 			}
-		} else if code == driver.ComboKeycodes {
-			comboMode = true
-		} else if res := encodeFunc(code); len(res) > 0 {
-			if *isDebug {
-				fmt.Printf("res: %s\r\n", code)
-			}
-			port.Write(res)
-			port.Write(encodeFunc(driver.EmptyKeycodes))
 		}
 
 		if err == io.EOF {
