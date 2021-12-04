@@ -5,12 +5,17 @@ package serial
 
 import (
 	"os"
+	"sync"
+	"time"
 
 	"golang.org/x/sys/unix"
 )
 
 type Port struct {
 	*os.File
+	wg       *sync.WaitGroup
+	buf      chan []byte
+	interval time.Duration
 }
 
 // Example
@@ -50,5 +55,33 @@ func Open(device string, baudrate int, databits int, parity uint32, stopbits uin
 		return nil, err
 	}
 
-	return &Port{f}, nil
+	return &Port{
+		File:     f,
+		wg:       new(sync.WaitGroup),
+		buf:      make(chan []byte, 256),
+		interval: 0,
+	}, nil
+}
+
+func (p *Port) SetInterval(interval time.Duration) {
+	p.interval = interval
+}
+
+func (p *Port) Push(data []byte) {
+	p.buf <- data
+}
+
+func (p *Port) GoWaitAndSend() (stop func()) {
+	p.wg.Add(1)
+	go func() {
+		for data := range p.buf {
+			p.Write(data)
+			time.Sleep(p.interval)
+		}
+	}()
+
+	return func() {
+		close(p.buf)
+		p.wg.Done()
+	}
 }

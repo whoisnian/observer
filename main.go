@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/whoisnian/observer/driver"
 	"github.com/whoisnian/observer/serial"
@@ -55,18 +56,21 @@ func runTestMode(fd int) error {
 }
 
 func openPort() (port *serial.Port, encodeFunc driver.EncodeFunc, err error) {
-	if *encode == "ch9329" {
-		port, err = serial.Open(*device, 9600, 8, serial.ParityNone, serial.StopBits1)
-		encodeFunc = driver.EncodeForCH9329
-	} else if *encode == "kcom3" {
-		port, err = serial.Open(*device, 57600, 8, serial.ParityNone, serial.StopBits1)
-		encodeFunc = driver.EncodeForKCOM3
-	} else {
-		return nil, nil, errors.New("unknown encode driver")
-	}
+	port, err = serial.Open(*device, 9600, 8, serial.ParityNone, serial.StopBits1)
 	if err != nil {
 		return nil, nil, err
 	}
+
+	if *encode == "ch9329" {
+		encodeFunc = driver.EncodeForCH9329
+	} else if *encode == "kcom3" {
+		encodeFunc = driver.EncodeForKCOM3
+		port.SetInterval(time.Millisecond * 16)
+	} else {
+		port.Close()
+		return nil, nil, errors.New("unknown encode driver")
+	}
+
 	return port, encodeFunc, nil
 }
 
@@ -76,6 +80,7 @@ func runNormalMode(fd int) error {
 		return err
 	}
 	defer port.Close()
+	stop := port.GoWaitAndSend()
 
 	var buf [8]byte
 	code := driver.EmptyKeycodes
@@ -92,13 +97,15 @@ func runNormalMode(fd int) error {
 				fmt.Printf("enter comboMode\r\n")
 			}
 		} else {
-			fmt.Printf("res: %s\r\n", code)
+			if *isDebug {
+				fmt.Printf("res: %s\r\n", code)
+			}
 			if isExit {
 				break
 			}
 			if res := encodeFunc(code); len(res) > 0 {
-				port.Write(res)
-				port.Write(encodeFunc(driver.EmptyKeycodes))
+				port.Push(res)
+				port.Push(encodeFunc(driver.EmptyKeycodes))
 			}
 		}
 
@@ -108,6 +115,8 @@ func runNormalMode(fd int) error {
 			return err
 		}
 	}
+
+	stop()
 	return nil
 }
 
