@@ -7,8 +7,8 @@ import (
 
 	"github.com/whoisnian/glb/httpd"
 	"github.com/whoisnian/glb/logger"
+	"github.com/whoisnian/glb/serial"
 	"github.com/whoisnian/observer/driver"
-	"github.com/whoisnian/observer/serial"
 )
 
 func viewHandler(store *httpd.Store) {

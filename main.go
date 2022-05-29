@@ -10,8 +10,8 @@ import (
 
 	"github.com/whoisnian/glb/ansi"
 	"github.com/whoisnian/glb/logger"
+	"github.com/whoisnian/glb/serial"
 	"github.com/whoisnian/observer/driver"
-	"github.com/whoisnian/observer/serial"
 	"github.com/whoisnian/observer/server"
 	"golang.org/x/sys/unix"
 	"golang.org/x/term"
