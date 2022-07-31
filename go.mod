@@ -1,9 +1,9 @@
 module github.com/whoisnian/observer
 
-go 1.17
+go 1.18
 
 require (
-	github.com/whoisnian/glb v0.1.1-0.20220529152000-b29ad1dd08d5
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
-	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467
+	github.com/whoisnian/glb v1.0.0
+	golang.org/x/sys v0.0.0-20220730100132-1609e554cd39
+	golang.org/x/term v0.0.0-20220722155259-a9ba230a4035
 )
