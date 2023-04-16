@@ -2,13 +2,13 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"os"
 	"time"
 
 	"github.com/whoisnian/glb/ansi"
+	"github.com/whoisnian/glb/config"
 	"github.com/whoisnian/glb/logger"
 	"github.com/whoisnian/observer/driver"
 	"github.com/whoisnian/observer/serial"
@@ -17,20 +17,26 @@ import (
 	"golang.org/x/term"
 )
 
-var isDebug = flag.Bool("d", false, "Output debug message")
-var mode = flag.String("m", "cli", "Running mode (cli,test,server)")
-var listenAt = flag.String("l", "127.0.0.1:8080", "Listen address (for server mode)")
-var upStream = flag.String("u", "127.0.0.1:8081", "Upstream µStreamer server (for server mode)")
-var device = flag.String("dev", "/dev/ttyUSB0", "UART device name")
-var encode = flag.String("enc", "ch9329", "Encode driver (ch9329, kcom3)")
+var CFG struct {
+	Debug      bool   `flag:"d,false,Enable debug output"`
+	Mode       string `flag:"m,cli,Running mode (cli,test,server)"`
+	ListenAddr string `flag:"l,127.0.0.1:8080,Listen address (for server mode)"`
+	UpStream   string `flag:"u,127.0.0.1:8081,Upstream µStreamer server (for server mode)"`
+	Device     string `flag:"dev,/dev/ttyUSB0,UART device name"`
+	Encode     string `flag:"enc,ch9329,Encode driver (ch9329, kcom3)"`
+	Baudrate   int    `flag:"baud,9600,UART device baudrate"`
+}
 
 func main() {
-	flag.Parse()
-	logger.SetDebug(*isDebug)
+	err := config.FromCommandLine(&CFG)
+	if err != nil {
+		logger.Fatal(err)
+	}
+	logger.SetDebug(CFG.Debug)
 
-	if *mode == "server" {
+	if CFG.Mode == "server" {
 		if err := runServerMode(); err != nil {
-			panic(err)
+			logger.Fatal(err)
 		}
 		return
 	}
@@ -38,23 +44,23 @@ func main() {
 	fd := int(os.Stdin.Fd())
 	oldState, err := term.MakeRaw(fd)
 	if err != nil {
-		panic(err)
+		logger.Fatal(err)
 	}
 	defer term.Restore(fd, oldState)
 
-	if *mode == "test" {
+	if CFG.Mode == "test" {
 		err = runTestMode(fd)
 	} else {
 		err = runCliMode(fd)
 	}
 	if err != nil {
-		panic(err)
+		logger.Fatal(err)
 	}
 }
 
 func runTestMode(fd int) error {
 	var buf [8]byte
-	code := driver.EmptyKeycodes
+	var code driver.Keycodes
 	isCombo := false
 	isExit := false
 	for {
@@ -80,16 +86,17 @@ func runTestMode(fd int) error {
 }
 
 func openPort() (port *serial.Port, encodeFunc driver.EncodeFunc, err error) {
-	port, err = serial.Open(*device, 9600, 8, serial.ParityNone, serial.StopBits1)
+	port, err = serial.Open(CFG.Device, CFG.Baudrate, 8, serial.ParityNone, serial.StopBits1)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if *encode == "ch9329" {
+	if CFG.Encode == "ch9329" {
 		encodeFunc = driver.EncodeForCH9329
-	} else if *encode == "kcom3" {
+		port.SetInterval(time.Millisecond * 50)
+	} else if CFG.Encode == "kcom3" {
 		encodeFunc = driver.EncodeForKCOM3
-		port.SetInterval(time.Millisecond * 16)
+		port.SetInterval(time.Millisecond * 50)
 	} else {
 		port.Close()
 		return nil, nil, errors.New("unknown encode driver")
@@ -107,7 +114,7 @@ func runCliMode(fd int) error {
 	stop := port.GoWaitAndSend()
 
 	var buf [8]byte
-	code := driver.EmptyKeycodes
+	var code driver.Keycodes
 	isCombo := false
 	isExit := false
 	for {
@@ -151,5 +158,5 @@ func runServerMode() error {
 	}
 	defer port.Close()
 
-	return server.Start(*listenAt, *upStream, port, encodeFunc)
+	return server.Start(CFG.ListenAddr, CFG.UpStream, port, encodeFunc)
 }

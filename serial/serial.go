@@ -20,11 +20,12 @@ type Port struct {
 }
 
 // Example
-//   device: /dev/ttyUSB0
-//   baudrate: 9600 (9600|19200|38400|57600|115200)
-//   databits: 8 (5|6|7|8)
-//   parity: ParityNone (ParityNone|ParityOdd|ParityEven|ParityMark|ParitySpace)
-//   stopbits: StopBits1 (StopBits1|StopBits2)
+//
+//	device: /dev/ttyUSB0
+//	baudrate: 9600 (9600|19200|38400|57600|115200)
+//	databits: 8 (5|6|7|8)
+//	parity: ParityNone (ParityNone|ParityOdd|ParityEven|ParityMark|ParitySpace)
+//	stopbits: StopBits1 (StopBits1|StopBits2)
 func Open(device string, baudrate int, databits int, parity uint32, stopbits uint32) (p *Port, err error) {
 	baudrateValid, ok := baudrateMap[baudrate]
 	if !ok {
